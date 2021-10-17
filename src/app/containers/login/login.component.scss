@@ -1,0 +1,24 @@
+@use "~@angular/material" as mat;
+
+$my-palette: mat.define-palette(mat.$indigo-palette);
+
+.container {
+  padding: 0 1rem;
+  display: flex;
+  flex-flow: column;
+  justify-content: center;
+  height: 100%;
+  margin: 0 auto;
+  max-width: 500px;
+  background-color: mat.get-color-from-palette($my-palette, "darker");
+}
+
+.text-field {
+  display: block;
+}
+
+.button-container {
+  padding: 0 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
