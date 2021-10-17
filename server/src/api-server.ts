@@ -1,9 +1,18 @@
 import express, { Application, NextFunction, Request, Response } from 'express';
 import morgan from 'morgan';
-import { Server } from 'typescript-rest';
+import { Strategy } from 'passport-custom';
+import { Connection } from 'typeorm';
+import { Inject, InjectValue } from 'typescript-ioc';
+import { PassportAuthenticator, Server } from 'typescript-rest';
 import IocServiceFactory from 'typescript-rest-ioc';
-import { HttpError, NotFoundError } from 'typescript-rest/dist/server/model/errors';
+import {
+  HttpError,
+  NotFoundError,
+  UnauthorizedError,
+} from 'typescript-rest/dist/server/model/errors';
 import './config';
+import { User } from './entity/User';
+import { TokenService } from './service/TokenService';
 
 const logger = console;
 
@@ -12,13 +21,17 @@ export class ApiServer {
 
   private readonly app: Application;
 
-  constructor() {
+  constructor(
+    @Inject private readonly tokenService: TokenService,
+    @InjectValue('connection') private readonly connection: Connection
+  ) {
     this.app = express();
     this.configureMiddleware();
 
     Server.registerServiceFactory(IocServiceFactory);
     Server.loadServices(this.app, 'controller/*', __dirname);
 
+    this.configureAuthenticator();
     this.configureErrorHandler();
   }
 
@@ -34,7 +47,44 @@ export class ApiServer {
   }
 
   private configureAuthenticator() {
-    // TODO: setup check JWT logic here...
+    const strategy = new Strategy(async (req, done) => {
+      logger.debug('Authorizing user');
+
+      try {
+        const authHeader = req.get('Authorization');
+
+        if (!authHeader) {
+          logger.debug('Auth header not found');
+          throw new UnauthorizedError();
+        }
+
+        const subId = await this.tokenService.verifyToken(authHeader);
+
+        if (!subId) {
+          logger.debug('Auth token could not be verified');
+          throw new UnauthorizedError();
+        }
+
+        const repository = this.connection.getRepository(User);
+        const user = await repository.findOne({ subId });
+
+        if (!user) {
+          logger.debug(`User with subId ${subId} could not be found`);
+          throw new UnauthorizedError();
+        }
+
+        done(null, user);
+      } catch (error) {
+        done(error);
+      }
+    });
+
+    const authenticator = new PassportAuthenticator(strategy, {
+      deserializeUser: (user: string) => JSON.parse(user),
+      serializeUser: (user: User) => JSON.stringify(user),
+    });
+
+    Server.registerAuthenticator(authenticator);
   }
 
   private configureErrorHandler() {
