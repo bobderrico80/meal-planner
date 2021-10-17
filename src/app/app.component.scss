@@ -1,0 +1,40 @@
+.container {
+  display: flex;
+  flex-flow: column;
+  height: 100%;
+}
+
+.header {
+  flex: 0 1 auto;
+}
+
+.main {
+  flex: 1 1 auto;
+}
+
+.button-wrapper {
+  display: flex;
+  flex-flow: column;
+  align-items: center;
+}
+
+.button-text {
+  line-height: 20px;
+  font-weight: 100;
+}
+
+.user-nav-wrapper {
+  padding: 1rem;
+}
+
+.main-wrapper {
+  padding: 1rem;
+}
+
+.main-nav-wrapper {
+  width: 100%;
+  margin: 0 auto;
+  max-width: 500px;
+  display: flex;
+  justify-content: space-between;
+}
