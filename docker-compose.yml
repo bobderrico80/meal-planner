@@ -1,0 +1,25 @@
+version: "3.7"
+services:
+  server:
+    build:
+      context: ./server/
+    volumes:
+      - ./server/src:/home/node/app/src
+      - ./server/nodemon.json:/home/node/app/nodemon.json
+    container_name: meal-planner-server
+    user: "node"
+    expose:
+      - "8081"
+    ports:
+      - "8081:8081"
+    command: "npm run dev"
+  db:
+    image: postgres:13
+    restart: always
+    container_name: meal-planner-db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db/data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: postgres
