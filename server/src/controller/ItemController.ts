@@ -1,13 +1,13 @@
 import { Connection } from 'typeorm';
 import { InjectValue } from 'typescript-ioc';
 import { Path, Security } from 'typescript-rest';
-import { List } from '../entity/List';
+import { Item } from '../entity/Item';
 import { RestController } from './RestController';
 
-@Path('/api/list')
+@Path('/api/item')
 @Security()
-export class ListController extends RestController<List> {
+export class ItemController extends RestController<Item> {
   constructor(@InjectValue('connection') connection: Connection) {
-    super(connection, List);
+    super(connection, Item);
   }
 }

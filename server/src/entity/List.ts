@@ -1,12 +1,13 @@
-import { Column, Entity, ManyToOne } from 'typeorm';
-import { CommonEntity } from './CommonEntity';
-import { User } from './User';
+import { Column, Entity, JoinTable, ManyToMany } from 'typeorm';
+import { Item } from './Item';
+import { UserOwnedEntity } from './UserOwnedEntity';
 
 @Entity()
-export class List extends CommonEntity {
+export class List extends UserOwnedEntity {
   @Column({ type: 'text' })
   name!: string;
 
-  @ManyToOne(() => User, (user) => user.tasks)
-  user!: User;
+  @ManyToMany(() => Item, { eager: true, cascade: true })
+  @JoinTable()
+  items!: Item[];
 }
