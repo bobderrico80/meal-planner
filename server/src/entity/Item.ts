@@ -10,6 +10,9 @@ export class Item extends UserOwnedEntity {
   @Column({ type: 'text', default: 'each' })
   unit!: string;
 
-  @ManyToOne(() => Category, { eager: true, nullable: false })
+  @Column({ nullable: false })
+  categoryId!: string;
+
+  @ManyToOne(() => Category)
   category!: Category;
 }

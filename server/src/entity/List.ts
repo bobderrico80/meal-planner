@@ -7,7 +7,7 @@ export class List extends UserOwnedEntity {
   @Column({ type: 'text' })
   name!: string;
 
-  @ManyToMany(() => Item, { eager: true, cascade: true })
+  @ManyToMany(() => Item, { cascade: true, eager: true })
   @JoinTable()
   items!: Item[];
 }
