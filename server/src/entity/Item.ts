@@ -4,15 +4,15 @@ import { UserOwnedEntity } from './UserOwnedEntity';
 
 @Entity()
 export class Item extends UserOwnedEntity {
-  @Column({ type: 'text', nullable: false })
+  @Column({ type: 'text', nullable: false, unique: true })
   name!: string;
 
   @Column({ type: 'text', default: 'each' })
-  unit!: string;
+  unit?: string;
 
   @Column({ nullable: false })
   categoryId!: string;
 
   @ManyToOne(() => Category)
-  category!: Category;
+  category?: Category;
 }

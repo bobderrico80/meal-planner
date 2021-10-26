@@ -4,8 +4,8 @@ import { User } from './User';
 
 export abstract class UserOwnedEntity extends CommonEntity {
   @Column({ nullable: false })
-  userId!: string;
+  userId?: string;
 
   @ManyToOne(() => User)
-  user!: User;
+  user?: User;
 }

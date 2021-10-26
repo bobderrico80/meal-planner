@@ -1,121 +1,52 @@
-import { JSONSchemaType } from 'ajv';
-import { Connection, EntityTarget, Repository } from 'typeorm';
+import { SomeJSONSchema } from 'ajv/dist/types/json-schema';
+import { EntityTarget } from 'typeorm';
 import { Context, DELETE, GET, Path, PathParam, POST, PUT, ServiceContext } from 'typescript-rest';
-import { NotFoundError, UnauthorizedError } from 'typescript-rest/dist/server/model/errors';
-import { User } from '../entity/User';
-import { UserOwnedEntity } from '../entity/UserOwnedEntity';
+import { EntityService } from '../service/EntityService';
 import { ValidatorService } from '../service/ValidatorService';
 
-export interface SchemaDefinition<T> {
-  requestBodySchema?: JSONSchemaType<T>;
-  schemaName: string;
-}
-
-export abstract class RestController<T extends UserOwnedEntity, R = T> {
+export abstract class RestController<T> {
   @Context
-  context!: ServiceContext;
-
-  private readonly repository: Repository<T>;
+  protected context!: ServiceContext;
 
   constructor(
-    private readonly connection: Connection,
-    entityTarget: EntityTarget<T>,
-    private readonly validatorService?: ValidatorService,
-    private readonly schemaDefinition?: SchemaDefinition<R>
+    protected readonly entityService: EntityService<T>,
+    protected readonly validatorService: ValidatorService,
+    protected readonly entityTarget: EntityTarget<T>,
+    protected readonly schemaName: string,
+    schema: SomeJSONSchema
   ) {
-    this.repository = this.connection.getRepository(entityTarget);
-
-    if (schemaDefinition) {
-      this.registerSchemas(schemaDefinition);
-    }
+    this.validatorService.registerSchema(schema, schemaName);
   }
 
   @Path('/')
   @GET
   async getEntities() {
-    return this.repository.find({ where: { userId: this.getUserId() }, loadEagerRelations: false });
+    return this.entityService.init(this.entityTarget, this.context).getEntities();
   }
 
   @Path('/')
   @POST
-  async createEntity(request: R): Promise<T> {
-    if (this.schemaDefinition && this.validatorService) {
-      this.validatorService.validatePayload(
-        `${this.schemaDefinition.schemaName}.requestBody`,
-        request
-      );
-    }
-
-    const newEntity = this.repository.create({
-      ...request,
-      userId: this.getUserId(),
-    } as any);
-
-    return this.repository.save(newEntity as any);
+  async createEntity(newEntity: T): Promise<T> {
+    this.validatorService.validatePayload(this.schemaName, newEntity);
+    return this.entityService.init(this.entityTarget, this.context).createEntity(newEntity);
   }
 
   @Path('/:id')
   @GET
   async getEntity(@PathParam('id') id: string) {
-    return this.findOne(id, true);
+    return this.entityService.init(this.entityTarget, this.context).getEntity(id);
   }
 
   @Path('/:id')
   @PUT
-  async updateEntity(@PathParam('id') id: string, request: R) {
-    if (this.schemaDefinition && this.validatorService) {
-      this.validatorService.validatePayload(
-        `${this.schemaDefinition.schemaName}.requestBody`,
-        request
-      );
-    }
-
-    const found = await this.findOne(id);
-    const updated = {
-      ...found,
-      ...request,
-    };
-
-    return this.repository.save(updated as any);
+  async updateEntity(@PathParam('id') id: string, entity: T) {
+    this.validatorService.validatePayload(this.schemaName, entity);
+    return this.entityService.init(this.entityTarget, this.context).updateEntity(id, entity);
   }
 
   @Path('/:id')
   @DELETE
   async deleteEntity(@PathParam('id') id: string) {
-    const found = await this.findOne(id);
-    await this.repository.delete(found.id!);
-  }
-
-  private registerSchemas(schemaDefinition: SchemaDefinition<R>) {
-    if (!this.validatorService) {
-      return;
-    }
-
-    if (schemaDefinition.requestBodySchema) {
-      this.validatorService.registerSchema(
-        schemaDefinition.requestBodySchema,
-        `${schemaDefinition.schemaName}.requestBody`
-      );
-    }
-  }
-
-  private async findOne(id: string, loadEagerRelations = false) {
-    const found = await this.repository.findOne({ id }, { loadEagerRelations });
-
-    if (!found) {
-      throw new NotFoundError();
-    }
-
-    return found;
-  }
-
-  private getUserId() {
-    if (!this.context.request.user) {
-      throw new UnauthorizedError();
-    }
-
-    const user = this.context.request.user as User;
-
-    return user.id;
+    return this.entityService.init(this.entityTarget, this.context).deleteEntity(id);
   }
 }

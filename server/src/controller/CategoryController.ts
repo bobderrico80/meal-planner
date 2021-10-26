@@ -1,32 +1,30 @@
-import { Connection } from 'typeorm';
-import { Inject, InjectValue } from 'typescript-ioc';
+import { SomeJSONSchema } from 'ajv/dist/types/json-schema';
+import { Inject } from 'typescript-ioc';
 import { Path, Security } from 'typescript-rest';
 import { Category } from '../entity/Category';
+import { EntityService } from '../service/EntityService';
 import { ValidatorService } from '../service/ValidatorService';
-import { RestController, SchemaDefinition } from './RestController';
+import { RestController } from './RestController';
 
 export interface CategoryRequest {
   name: string;
 }
 
-const schemaDefinition: SchemaDefinition<CategoryRequest> = {
-  schemaName: 'category',
-  requestBodySchema: {
-    type: 'object',
-    properties: {
-      name: { type: 'string' },
-    },
-    required: ['name'],
+const requestSchema: SomeJSONSchema = {
+  type: 'object',
+  properties: {
+    name: { type: 'string' },
   },
+  required: ['name'],
 };
 
 @Path('/api/category')
 @Security()
-export class CategoryController extends RestController<Category, CategoryRequest> {
+export class CategoryController extends RestController<Category> {
   constructor(
-    @InjectValue('connection') connection: Connection,
+    @Inject entityService: EntityService<Category>,
     @Inject validatorService: ValidatorService
   ) {
-    super(connection, Category, validatorService, schemaDefinition);
+    super(entityService, validatorService, Category, 'category.request', requestSchema);
   }
 }
